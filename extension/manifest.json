@@ -1,0 +1,71 @@
+{
+  "manifest_version": 3,
+  "name": "Couchport",
+  "version": "1.0.0",
+  "description": "Lançador de jogos de navegador estilo console: controle, capas automáticas, tela cheia e backup de saves.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA5dtsPlb2e9U274nkgLmSjPb6nVlkXRjW10OenDkLyZ4Lmri8lS04Lb3k4PYtEsaiwYyQk8UrnY/+LZSfOORzPFjMk4yVvD2QV5J//qjOFGEeAKxXKkrgbAqAGj/5ZlKjbBdU7HB0kU7s44VHkKgDyfxPSeRQ8G1iW1uHJJkMfxDicKKu88wcdubl7tBQF2arHS7Ku6phkeAdtwAXiDhjHheTc9n4OsmCP/5CEwZ7BubDQ7jALsVwGMSwaaIuhbHnJzBtLk/tSzB7m3C5bwXYoCG3QzxAWBAw5sQPysl5nAJup1UKHkq6/0+5f5VlkGE6CsD0WbGi8l/3lpu5wPhJiwIDAQAB",
+  "icons": {
+    "16": "icons/16.png",
+    "32": "icons/32.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
+  "action": {
+    "default_title": "Abrir Couchport",
+    "default_icon": {
+      "16": "icons/16.png",
+      "32": "icons/32.png"
+    }
+  },
+  "background": {
+    "service_worker": "bg.js",
+    "type": "module"
+  },
+  "permissions": [
+    "tabs",
+    "windows",
+    "storage",
+    "unlimitedStorage",
+    "downloads",
+    "downloads.ui",
+    "contextMenus",
+    "alarms"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "http://*/__couchport_restore__*",
+        "https://*/__couchport_restore__*"
+      ],
+      "js": [
+        "idbser.js",
+        "restore.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": false
+    },
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "idbser.js",
+        "content.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ],
+  "commands": {
+    "back-to-hub": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+H"
+      },
+      "description": "Voltar ao menu do Couchport (salva o jogo antes)"
+    }
+  }
+}

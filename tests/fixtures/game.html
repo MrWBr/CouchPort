@@ -1,0 +1,23 @@
+<!doctype html><html><head><title>loading</title><meta property="og:image" content="/cover.png"></head><body style="background:#123;color:#fff">Jogo teste
+<script>
+window.dbReady = new Promise(res => {
+  const r = indexedDB.open('/userfs', 21);
+  r.onupgradeneeded = () => { const db = r.result; db.createObjectStore('FILE_DATA'); const s = db.createObjectStore('meta', {keyPath:'id', autoIncrement:true}); s.createIndex('byName','name'); };
+  r.onsuccess = () => { window.db = r.result; res(r.result); };
+});
+async function writeSave(level){
+  localStorage.setItem('save1', JSON.stringify({level}));
+  const db = await dbReady;
+  await new Promise(res => { const tx = db.transaction(['FILE_DATA','meta'],'readwrite');
+    tx.objectStore('FILE_DATA').put({timestamp:new Date(1700000000000), mode:33206, contents:new Uint8Array([1,2,3,level])}, '/userfs/save.dat');
+    tx.objectStore('meta').put({id:1, name:'x', blob:new Blob(['hello'+level],{type:'text/plain'})});
+    tx.oncomplete = res; });
+  document.title = 'saved' + level;
+}
+async function readSave(){
+  const db = await dbReady;
+  const get = (s,k) => new Promise(res => { const r = db.transaction(s).objectStore(s).get(k); r.onsuccess = () => res(r.result); });
+  const f = await get('FILE_DATA','/userfs/save.dat'); const m = await get('meta',1);
+  return { ls: localStorage.getItem('save1'), contents: f && [...f.contents], isU8: f && f.contents instanceof Uint8Array, ts: f && f.timestamp instanceof Date && f.timestamp.getTime(), blob: m && m.blob instanceof Blob ? await m.blob.text() : null };
+}
+</script></body></html>

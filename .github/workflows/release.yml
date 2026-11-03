@@ -1,0 +1,30 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Conferir versão do manifest
+        run: |
+          VER=$(jq -r .version extension/manifest.json)
+          if [ "v$VER" != "${GITHUB_REF_NAME}" ]; then
+            echo "Tag ${GITHUB_REF_NAME} não bate com a versão $VER do manifest.json"; exit 1
+          fi
+
+      - name: Empacotar
+        run: bash scripts/package.sh
+
+      - name: Publicar
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.zip
+          generate_release_notes: true

@@ -1,0 +1,30 @@
+# Copie para ~/.config/couchport/launcher.conf e ajuste.
+
+# Navegador: auto, um comando (google-chrome, chromium, brave-browser)
+# ou flatpak:<id> (flatpak:com.google.Chrome)
+COUCHPORT_BROWSER=auto
+
+# Pasta do perfil de jogos. Vazio = ~/.config/couchport/profile
+# (ou ~/.var/app/<id>/config/couchport-profile no Flatpak)
+COUCHPORT_PROFILE=
+
+# Aceleração: off | webgpu | vulkan
+#   webgpu  -> --enable-unsafe-webgpu --ignore-gpu-blocklist (recomendado)
+#   vulkan  -> também força ANGLE/Skia sobre Vulkan e X11 (mais rápido em algumas
+#              placas NVIDIA, pode quebrar em outras)
+COUCHPORT_GPU=webgpu
+
+# 1 = usar a placa NVIDIA via PRIME offload (notebook híbrido ou eGPU).
+# No Flatpak, instale também a extensão GL da mesma versão do driver:
+#   flatpak install flathub org.freedesktop.Platform.GL.nvidia-<versão-com-hífens>
+COUCHPORT_NVIDIA=0
+
+# 1 = muda o power-profiles-daemon para "performance" enquanto o Couchport estiver aberto
+COUCHPORT_PERFORMANCE=1
+
+# Pasta da extensão para --load-extension. Funciona no Chromium; o Google Chrome
+# recente ignora esse flag, aí é preciso carregar uma vez em chrome://extensions.
+COUCHPORT_EXTENSION_DIR=
+
+# Flags extras, separados por espaço
+COUCHPORT_EXTRA_FLAGS=

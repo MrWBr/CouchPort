@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Couchport</title>
+<link rel="icon" href="icons/32.png">
+<link rel="stylesheet" href="hub.css">
+</head>
+<body>
+<div id="bg" aria-hidden="true">
+  <div class="bgimg" id="bgA"></div>
+  <div class="bgimg" id="bgB"></div>
+  <div class="shade"></div>
+</div>
+
+<header class="top">
+  <div class="logo">COUCH<span>PORT</span></div>
+  <div class="chip" id="gpu" title="Placa de vídeo em uso"><i class="dot"></i><span>GPU…</span></div>
+  <div class="spacer"></div>
+  <div class="chip" id="pad"><i class="dot"></i><span>Sem controle</span></div>
+  <div class="clock" id="clock"></div>
+</header>
+
+<main id="home">
+  <section class="hero" id="hero">
+    <div class="kicker" id="heroKicker"></div>
+    <h1 id="heroTitle"></h1>
+    <div class="meta" id="heroMeta"></div>
+    <div class="heroActions" id="heroActions"></div>
+  </section>
+  <div class="rows" id="rows"><div class="rowsInner" id="rowsInner"></div></div>
+</main>
+
+<section id="library" hidden>
+  <div class="libHead">
+    <h2>Biblioteca <span class="libBy">por <b id="libBy"></b></span></h2>
+    <div class="libTabs" id="libTabs"></div>
+    <div class="libInfo" id="libInfo"></div>
+  </div>
+  <div class="libView" id="libView"><div class="libGrid" id="libGrid"></div></div>
+</section>
+
+<footer class="hints" id="hints"></footer>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="panel" id="panel" role="dialog" aria-modal="true"></div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<input type="file" id="fileBookmarks" accept=".html,.htm" hidden>
+<input type="file" id="fileList" accept=".json,application/json" hidden>
+<input type="file" id="fileSave" accept=".json,application/json" hidden>
+<input type="file" id="fileCover" accept="image/*" hidden>
+
+<script type="module" src="hub.js"></script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+# Couchport — lançador para Linux
+# Abre o navegador num perfil separado para jogos, já no menu do Couchport.
+#
+# Configuração opcional em ~/.config/couchport/launcher.conf (veja launcher.conf.example).
+# Qualquer variável também pode vir do ambiente, ex.: COUCHPORT_NVIDIA=1 couchport
+
+set -u
+
+EXT_ID="gophecbelcdemgikiigfdmihjplabpbc"
+HUB_URL="chrome-extension://$EXT_ID/hub.html"
+
+CONF="${XDG_CONFIG_HOME:-$HOME/.config}/couchport/launcher.conf"
+# shellcheck source=/dev/null
+[ -f "$CONF" ] && . "$CONF"
+
+COUCHPORT_BROWSER="${COUCHPORT_BROWSER:-auto}"   # auto | flatpak:<app-id> | comando (google-chrome, chromium, brave-browser…)
+COUCHPORT_PROFILE="${COUCHPORT_PROFILE:-}"       # pasta do perfil; vazio = padrão por navegador
+COUCHPORT_GPU="${COUCHPORT_GPU:-webgpu}"         # off | webgpu | vulkan
+COUCHPORT_NVIDIA="${COUCHPORT_NVIDIA:-0}"        # 1 = PRIME render offload (notebook híbrido / eGPU NVIDIA)
+COUCHPORT_PERFORMANCE="${COUCHPORT_PERFORMANCE:-1}" # 1 = power-profiles-daemon em "performance" enquanto aberto
+COUCHPORT_EXTENSION_DIR="${COUCHPORT_EXTENSION_DIR:-}" # tenta --load-extension (Chromium; o Chrome oficial ignora)
+COUCHPORT_EXTRA_FLAGS="${COUCHPORT_EXTRA_FLAGS:-}"
+
+die() { echo "couchport: $*" >&2; command -v notify-send >/dev/null && notify-send "Couchport" "$*"; exit 1; }
+
+# ---------- escolhe o navegador ----------
+CMD=()
+KIND=""
+if [ "$COUCHPORT_BROWSER" = "auto" ]; then
+    for c in google-chrome-stable google-chrome chromium chromium-browser brave-browser microsoft-edge-stable; do
+        if command -v "$c" >/dev/null 2>&1; then COUCHPORT_BROWSER="$c"; break; fi
+    done
+    if [ "$COUCHPORT_BROWSER" = "auto" ] && command -v flatpak >/dev/null 2>&1; then
+        for a in com.google.Chrome org.chromium.Chromium com.brave.Browser com.microsoft.Edge; do
+            if flatpak info "$a" >/dev/null 2>&1; then COUCHPORT_BROWSER="flatpak:$a"; break; fi
+        done
+    fi
+    [ "$COUCHPORT_BROWSER" = "auto" ] && die "nenhum navegador Chromium encontrado (defina COUCHPORT_BROWSER)"
+fi
+
+if [[ "$COUCHPORT_BROWSER" == flatpak:* ]]; then
+    APP="${COUCHPORT_BROWSER#flatpak:}"
+    KIND="flatpak"
+    CMD=(flatpak run)
+    if [ "$COUCHPORT_NVIDIA" = "1" ]; then
+        CMD+=(--env=__NV_PRIME_RENDER_OFFLOAD=1 --env=__GLX_VENDOR_LIBRARY_NAME=nvidia --env=__VK_LAYER_NV_optimus=NVIDIA_only)
+    fi
+    CMD+=("$APP")
+    [ -z "$COUCHPORT_PROFILE" ] && COUCHPORT_PROFILE="$HOME/.var/app/$APP/config/couchport-profile"
+else
+    KIND="native"
+    command -v "$COUCHPORT_BROWSER" >/dev/null 2>&1 || die "navegador não encontrado: $COUCHPORT_BROWSER"
+    if [ "$COUCHPORT_NVIDIA" = "1" ]; then
+        export __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia __VK_LAYER_NV_optimus=NVIDIA_only
+    fi
+    CMD=("$COUCHPORT_BROWSER")
+    [ -z "$COUCHPORT_PROFILE" ] && COUCHPORT_PROFILE="${XDG_CONFIG_HOME:-$HOME/.config}/couchport/profile"
+fi
+mkdir -p "$COUCHPORT_PROFILE"
+
+# ---------- flags ----------
+ARGS=(--user-data-dir="$COUCHPORT_PROFILE" --no-first-run --no-default-browser-check)
+DISABLE="DisableLoadExtensionCommandLineSwitch"
+case "$COUCHPORT_GPU" in
+    off) ;;
+    webgpu) ARGS+=(--ignore-gpu-blocklist --enable-unsafe-webgpu) ;;
+    vulkan)
+        ARGS+=(--ozone-platform=x11 --ignore-gpu-blocklist --enable-unsafe-webgpu
+               --enable-features=Vulkan,UseSkiaRenderer,VulkanFromANGLE,DefaultANGLEVulkan)
+        DISABLE="$DISABLE,WebGPUDeveloperFeatures" ;;
+    *) die "COUCHPORT_GPU inválido: $COUCHPORT_GPU (use off, webgpu ou vulkan)" ;;
+esac
+ARGS+=(--disable-features="$DISABLE")
+[ -n "$COUCHPORT_EXTENSION_DIR" ] && ARGS+=(--load-extension="$COUCHPORT_EXTENSION_DIR")
+# shellcheck disable=SC2206
+[ -n "$COUCHPORT_EXTRA_FLAGS" ] && ARGS+=($COUCHPORT_EXTRA_FLAGS)
+
+# ---------- já aberto? só traz o menu ----------
+if pgrep -f -- "--user-data-dir=$COUCHPORT_PROFILE" >/dev/null 2>&1; then
+    exec "${CMD[@]}" "${ARGS[@]}" --new-window "$HUB_URL" "$@"
+fi
+
+# ---------- modo desempenho enquanto estiver aberto ----------
+OLD=""; CHANGED=0
+if [ "$COUCHPORT_PERFORMANCE" = "1" ] && command -v powerprofilesctl >/dev/null 2>&1; then
+    OLD="$(powerprofilesctl get 2>/dev/null || true)"
+    if [ -n "$OLD" ] && [ "$OLD" != "performance" ] && powerprofilesctl set performance >/dev/null 2>&1; then CHANGED=1; fi
+fi
+restore_power() { [ "$CHANGED" -eq 1 ] && powerprofilesctl set "$OLD" >/dev/null 2>&1; true; }
+trap restore_power EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+"${CMD[@]}" "${ARGS[@]}" "$HUB_URL" "$@"
